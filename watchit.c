@@ -11,9 +11,11 @@
  * hash lines to a file.
  */
 
+#ifdef __linux__
 #define _POSIX_C_SOURCE 200809L
 #define _GNU_SOURCE
 #define _WITH_DPRINTF
+#endif
 
 #include <errno.h>
 #include <fcntl.h>
@@ -33,7 +35,11 @@
 #define SO_NAME		"libwatchit.so"
 #define LISTEN_BACKLOG	10
 
+#ifdef __linux__
 extern char *program_invocation_name;
+#else
+const char *program_invocation_name;
+#endif
 
 typedef struct {
     FILE* fh;
@@ -252,6 +258,9 @@ main(int argc, char *argv[])
     int c;
     user_data udata = { NULL, NULL, NULL };
 
+#ifndef __linux_
+    program_invocation_name = getprogname();
+#endif
     progdir = strdup(program_invocation_name);
     if (progdir == NULL)
 	handle_error("strdup(program_invocation_name)");
@@ -285,7 +294,7 @@ main(int argc, char *argv[])
 	    case 0:
 		switch (option_index) {
 		    case OPT_CWD:
-			udata.cwd_prefix = get_current_dir_name(); // XXX NULL
+			udata.cwd_prefix = getcwd(NULL, 0); // XXX NULL
 			break;
 		    case OPT_PRELOAD:
 			preload_path = optarg;
